@@ -430,11 +430,17 @@
 {
   FBSession *session = request.session;
   FBElementCache *elementCache = session.elementCache;
-  XCUIElement *element = [elementCache elementForUUID:request.parameters[@"uuid"]];
-  if (nil == element) {
-    return FBResponseWithStatus([FBCommandStatus staleElementReferenceErrorWithMessage:nil
-                                                                             traceback:nil]);
+  XCUIElement *element;
+  if( [request.parameters[@"uuid"] isEqual:@"0"] ) {
+    element = nil;
+  } else {
+    element = [elementCache elementForUUID:request.parameters[@"uuid"]];
+    if (nil == element ) {
+      return FBResponseWithStatus([FBCommandStatus staleElementReferenceErrorWithMessage:nil
+                                                                               traceback:nil]);
+    }
   }
+
   CGPoint startPoint = CGPointMake((CGFloat)(element.frame.origin.x + [request.arguments[@"fromX"] doubleValue]), (CGFloat)(element.frame.origin.y + [request.arguments[@"fromY"] doubleValue]));
   CGPoint endPoint = CGPointMake((CGFloat)(element.frame.origin.x + [request.arguments[@"toX"] doubleValue]), (CGFloat)(element.frame.origin.y + [request.arguments[@"toY"] doubleValue]));
   NSTimeInterval duration = [request.arguments[@"duration"] doubleValue];
@@ -449,7 +455,7 @@
 {
   FBElementCache *elementCache = request.session.elementCache;
   XCUIElement *element = [elementCache elementForUUID:request.parameters[@"uuid"]];
-  if (nil == element) {
+  if (nil == element && !( [request.parameters[@"uuid"] isEqual:@"0"] ) ) {
     return FBResponseWithStatus([FBCommandStatus staleElementReferenceErrorWithMessage:nil
                                                                              traceback:nil]);
   }
@@ -475,6 +481,11 @@
 {
   FBElementCache *elementCache = request.session.elementCache;
   CGPoint tapPoint = CGPointMake((CGFloat)[request.arguments[@"x"] doubleValue], (CGFloat)[request.arguments[@"y"] doubleValue]);
+  if( ![request.parameters[@"uuid"] isEqual:@"0"] ) {
+    XCUICoordinate *tapCoordinate = [self.class gestureCoordinateWithCoordinate:tapPoint application:request.session.activeApplication shouldApplyOrientationWorkaround:isSDKVersionLessThan(@"11.0")];
+    [tapCoordinate tap];
+    return FBResponseWithOK();
+  }
   XCUIElement *element = [elementCache elementForUUID:request.parameters[@"uuid"]];
   if (nil == element) {
     XCUICoordinate *tapCoordinate = [self.class gestureCoordinateWithCoordinate:tapPoint application:request.session.activeApplication shouldApplyOrientationWorkaround:isSDKVersionLessThan(@"11.0")];
